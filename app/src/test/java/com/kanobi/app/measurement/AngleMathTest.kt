@@ -1,8 +1,8 @@
-package com.example.dirt.measurement
+package com.kanobi.app.measurement
 
+import kotlin.math.*
 import org.junit.Assert.*
 import org.junit.Test
-import kotlin.math.*
 
 class AngleMathTest {
     @Test fun longAxisReturnsKnownInclinationsWithEitherRoll() {

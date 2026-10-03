@@ -1,55 +1,57 @@
-# DIRT
+<p align="center"><img src="docs/icon.svg" width="96" alt="Kanobi icon"></p>
 
-Нативный Android-угломер для спота: вылеты, съезжалки, дропы — любой участок, к которому можно приложить прямую рейку. Kotlin, Jetpack Compose, Android 13+ (API 33).
+# Kanobi
 
-## Что умеет
+**Kanobi** (ქანობი, Georgian for “slope”) is an Android inclinometer for the trail: takeoffs, roll-ins, drops — any surface you can lay a straightedge on. One big number, a dial, and a spirit level when the phone stands on its edge.
 
-- Угол длинной стороны телефона относительно горизонтали, со знаком и шагом 0,1°. Плюс — подъём к верхнему торцу, минус — спуск.
-- Два положения: экраном вверх на рейке или на ребре. На ребре телефон работает как уровень: цифры и шкала поворачиваются по реальному горизонту, стрелка идёт вдоль торца, на фоне появляется линия горизонта.
-- Стабильность: показание должно продержаться в пределах 0,6° не меньше 650 мс, кольцо вокруг кнопки показывает прогресс. Это критерий неподвижности, а не гарантированная погрешность.
-- Фиксация угла и сохранение в журнал с названием. Журнал открывается кнопкой в шапке, хранится на телефоне, удаление с подтверждением.
-- Датчик гравитации, при его отсутствии — акселерометр с фильтром. Устаревшие показания не выдаются за готовый замер.
-- Экран не гаснет во время измерения. Аккаунт, сеть и разрешения не нужны. Android Backup может сохранять журнал вместе с резервной копией устройства.
+<p align="center">
+  <img src="docs/screenshots/measure.jpg" width="200" alt="Measuring screen up">
+  <img src="docs/screenshots/edge.jpg" width="200" alt="Spirit level on the edge">
+  <img src="docs/screenshots/material-you.jpg" width="200" alt="Material You colours">
+  <img src="docs/screenshots/settings.jpg" width="200" alt="Settings">
+</p>
 
-## Визуал
+## Features
 
-- Фон — живая топографическая карта на AGSL-шейдере: контуры медленно дрейфуют, свет рельефа следует за наклоном, поверх — зерно. На ребре шейдер рисует настоящий горизонт с ровными слоями под ним. При фиксации от числа расходится волна.
-- Пока телефон движется, цифры расслаиваются на RGB (RenderEffect) и собираются в резкое число, когда показание стабилизировалось.
-- Шкала-циферблат с делениями 2°/10°/30°, пунктирным горизонтом и стрелкой вдоль измеряемой линии.
-- Фон считается в 2/3 разрешения в кэшируемый слой примерно 30 раз в секунду, поэтому остальные анимации не пересчитывают шейдер. Системная настройка «Убрать анимацию» останавливает дрейф.
+- Angle of the phone's long side against the horizon, signed, in 0.1° steps: plus rises towards the top of the phone, minus falls. Slope in percent underneath.
+- Screen up on a straightedge, or standing on its long edge. On the edge the phone turns into a spirit level: the readout and the dial follow the real horizon, the needle runs along the phone and the background shows the horizon line.
+- Stability is a dwell, not a word: the reading must stay within 0.6° for 650 ms. The shutter ring fills while it does, the digits split into RGB fringes while the phone moves and snap into focus when it stops.
+- Lock the angle and save it to a local journal with a name.
+- Settings: lime or Material You colour, zero calibration on a level surface, haptics, and a “live background” switch to save battery.
+- English, Russian and Georgian, following the device language or the per-app language setting.
+- No account, no network, no permissions. The screen stays on while measuring.
 
-## Замер
+The angle depends on how the phone sits on the straightedge, its case, camera bump and sensor: screen up, a camera bump can tilt it by around a degree, which zero calibration takes out; on the edge it does not matter. Check against a level surface or a known angle when in doubt. One angle says nothing about whether a jump is safe or about the curve of a takeoff.
 
-1. Положить прямую рейку на измеряемый участок, у вылета — по касательной к самому краю.
-2. Положить телефон вдоль рейки экраном вверх, верхним торцом по направлению подъёма, или поставить его на ребро вдоль рейки.
-3. Дождаться, пока заполнится кольцо, зафиксировать и сохранить.
+## Under the hood
 
-Калибровки нуля нет. Угол зависит от контакта телефона с рейкой, чехла, выступа камеры и самого датчика: экраном вверх выступ камеры может давать смещение порядка градуса, на ребре его нет. При сомнениях проверить телефон на ровной поверхности или по известному углу. Один угол не определяет безопасность прыжка и не описывает радиусный профиль вылета. На планшетах с естественной альбомной ориентацией датчиков метод длинной стороны требует отдельной адаптации.
+Kotlin and Jetpack Compose, Android 13+ (API 33).
 
-## Код
+- `measurement/` — gravity sensor (or a filtered accelerometer), the angle maths and the stability window, the journal.
+- `ui/` — measure screen, dial, journal, sheets and settings.
+- `fx/` — AGSL shaders: the topographic background (value noise with analytic derivatives, so contour lines and hillshade need no `fwidth`), the horizon, the lock pulse and the RGB split. The background renders at two-thirds resolution into a cached layer, follows motion at the display rate and drifts at about 30 fps when the phone is still.
+- `theme/` — the palette, derived from the Material You accent when that is on.
 
-- `measurement/` — датчик, математика угла, окно стабильности, локальное хранилище.
-- `ui/` — экран замера, шкала, журнал, окна.
-- `fx/` — AGSL-шейдеры и эффекты.
-- `theme/` — цвета и шрифты.
+## Build
 
-## Сборка
-
-Открыть корень проекта в Android Studio. Требуются JDK 17+, Android SDK 36. При первом запуске Gradle скачивает зависимости.
+JDK 17+ and Android SDK 36.
 
 ```sh
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+./gradlew :app:assembleRelease
 ```
 
-Готовый APK: `dist/DIRT-debug.apk`. Выход Gradle: `app/build/outputs/apk/debug/app-debug.apk`.
+Release builds are minified with R8. They are signed with the key described in `keystore.properties` (kept out of git) when the file exists:
 
-```sh
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.example.dirt/.MainActivity
+```properties
+storeFile=release.jks
+storePassword=…
+keyAlias=kanobi
+keyPassword=…
 ```
 
-## Проверки
+Without it they fall back to the debug key, which is fine for sideloading but not for a store. Ready-made APKs are attached to the [releases](https://github.com/whekin/kanobi/releases).
 
-Сборка, 4 unit-теста и Android Lint проходят. Интерфейс проверен на эмуляторе Pixel 9 Pro (API 36) с виртуальными датчиками; точность датчика и производительность шейдеров на реальном телефоне ещё не проверены. Подробности: [docs/validation.md](docs/validation.md).
+## License
 
-Шрифты Barlow Condensed / Golos Text: SIL Open Font License, `docs/licenses/`. Всё работает офлайн.
+MIT, see [LICENSE](LICENSE). Fonts: Barlow Condensed and Golos Text, SIL Open Font License, see `docs/licenses/`.

@@ -1,6 +1,6 @@
-package com.example.dirt.fx
+package com.kanobi.app.fx
 
-import android.graphics.RenderEffect
+import android.graphics.RenderEffect as PlatformRenderEffect
 import android.graphics.RuntimeShader
 import android.provider.Settings
 import android.util.Log
@@ -20,18 +20,14 @@ import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposeRenderEffect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import com.example.dirt.theme.Lime
-import com.example.dirt.theme.Void
-import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.max
@@ -44,7 +40,7 @@ fun rememberShader(source: String): RuntimeShader? = remember(source) {
     try {
         RuntimeShader(source)
     } catch (e: IllegalArgumentException) {
-        Log.w("DIRT", "AGSL shader rejected", e)
+        Log.w("Kanobi", "AGSL shader rejected", e)
         null
     }
 }
@@ -66,36 +62,39 @@ class Ambience(
 )
 
 /**
- * Full-screen living topographic map. It redraws at about 30 fps from its own frame loop, so
- * sensor updates never recompose it. The shader renders at [TerrainScale] into a cached layer:
- * other animations on screen only composite that texture instead of running the shader again.
+ * Full-screen living topographic map. It follows tilt and horizon changes at the display rate and
+ * drifts at about 30 fps when the phone is still, from its own frame loop, so sensor updates never
+ * recompose it. With [live] off it stays still. The shader renders at [TerrainScale] into a cached
+ * layer: other animations on screen only composite that texture instead of running the shader again.
  */
 @Composable
-fun AmbientTerrain(ambience: () -> Ambience, modifier: Modifier = Modifier) {
+fun AmbientTerrain(ambience: () -> Ambience, accent: Color, base: Color, live: Boolean, modifier: Modifier = Modifier) {
     val latest by rememberUpdatedState(ambience)
     val scene = remember { Scene() }
     val frame = remember { mutableIntStateOf(0) }
     val shader = rememberShader(Agsl.TERRAIN)
     val resolver = LocalContext.current.contentResolver
-    val motion = remember(resolver) {
+    val systemMotion = remember(resolver) {
         Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
     }
+    val motion = live && systemMotion
     LaunchedEffect(motion) {
         var previous = 0L
-        while (true) {
-            withFrameNanos { now ->
-                scene.advance(latest(), if (previous == 0L) 0f else (now - previous) / 1e9f, motion)
-                previous = now
+        var drawn = 0L
+        while (true) withFrameNanos { now ->
+            val busy = scene.advance(latest(), if (previous == 0L) 0f else (now - previous) / 1e9f, motion)
+            previous = now
+            if (busy || drawn == 0L || (motion && now - drawn >= 32_000_000L)) {
+                drawn = now
+                frame.intValue++
             }
-            frame.intValue++
-            delay(24)
         }
     }
     Spacer(modifier.renderedAt(TerrainScale).drawBehind {
         frame.intValue
         scene.size = size / TerrainScale
         if (shader == null) {
-            drawRect(Void)
+            drawRect(base)
             return@drawBehind
         }
         val focus = scene.focusOr(Offset(scene.size.width / 2f, scene.size.height * 0.3f)) * TerrainScale
@@ -106,7 +105,8 @@ fun AmbientTerrain(ambience: () -> Ambience, modifier: Modifier = Modifier) {
         shader.setFloatUniform("uFocus", focus.x, focus.y)
         shader.setFloatUniform("uGlow", scene.glow[0], scene.glow[1], scene.glow[2])
         shader.setFloatUniform("uPulse", scene.pulseAge)
-        shader.setFloatUniform("uAccent", Lime.red, Lime.green, Lime.blue)
+        shader.setFloatUniform("uAccent", accent.red, accent.green, accent.blue)
+        shader.setFloatUniform("uBase", base.red, base.green, base.blue)
         shader.setFloatUniform("uHorizon", scene.horizon)
         shader.setFloatUniform("uUp", scene.up.x, scene.up.y)
         shader.setFloatUniform("uClear", scene.clear / density)
@@ -151,19 +151,27 @@ private class Scene {
     /** Seconds since the last lock pulse, or -1 while there is nothing to show. */
     val pulseAge get() = if (motion) time - pulseAt else -1f
 
-    fun advance(target: Ambience, dt: Float, motion: Boolean) {
+    /** Steps towards [target]; returns true while anything still visibly moves. */
+    fun advance(target: Ambience, dt: Float, motion: Boolean): Boolean {
         this.motion = motion
         val step = dt.coerceIn(0f, 0.1f)
         if (motion) time += step
-        val k = if (motion) 1f - exp(-step / 0.35f) else 1f
-        tilt += (target.tilt - tilt) * k
-        horizon += (target.horizon - horizon) * k
-        clear += (target.clear - clear) * k
+        // The horizon has to keep up with the phone; light and glow can take their time.
+        val slow = if (motion) 1f - exp(-step / 0.35f) else 1f
+        val fast = if (motion) 1f - exp(-step / 0.1f) else 1f
+        var busy = false
+        fun ease(current: Float, goal: Float, k: Float, epsilon: Float): Float {
+            if (abs(goal - current) > epsilon) busy = true
+            return current + (goal - current) * k
+        }
+        tilt = ease(tilt, target.tilt, slow, 0.3f)
+        horizon = ease(horizon, target.horizon, fast, 0.002f)
+        clear = ease(clear, target.clear, fast, 0.5f)
+        for (i in 0..2) glow[i] = ease(glow[i], target.glow.channel(i) * target.energy, slow, 0.002f)
         val roll = Math.toRadians(target.roll.toDouble())
-        up = lerp(up, Offset(sin(roll).toFloat(), -cos(roll).toFloat()), k).let { it / max(it.getDistance(), 1e-3f) }
-        glow[0] += (target.glow.red * target.energy - glow[0]) * k
-        glow[1] += (target.glow.green * target.energy - glow[1]) * k
-        glow[2] += (target.glow.blue * target.energy - glow[2]) * k
+        val aimUp = Offset(sin(roll).toFloat(), -cos(roll).toFloat())
+        if (horizon > 0.002f && (aimUp - up).getDistance() > 0.003f) busy = true
+        up = lerp(up, aimUp, fast).let { it / max(it.getDistance(), 1e-3f) }
         val aim = when {
             target.focus.isSpecified -> target.focus
             size.isEmpty() -> Offset.Unspecified
@@ -171,27 +179,50 @@ private class Scene {
         }
         focus = when {
             !aim.isSpecified -> focus
-            focus.isSpecified -> lerp(focus, aim, k)
+            focus.isSpecified -> {
+                if ((aim - focus).getDistance() > 0.5f) busy = true
+                lerp(focus, aim, fast)
+            }
             else -> aim
         }
         if (target.pulse != pulse) {
             pulse = target.pulse
             pulseAt = time
         }
+        return busy || pulseAge in 0f..1.6f
     }
 
     fun focusOr(default: Offset) = focus.takeIf { it.isSpecified } ?: default
 }
 
+private fun Color.channel(i: Int) = when (i) {
+    0 -> red
+    1 -> green
+    else -> blue
+}
+
 /**
- * Splits red and blue apart by up to [maxShift] while [amount] (0..1) is above zero.
- * [amount] is read inside the layer, so changing it never recomposes the content.
+ * RGB split for a layer: red and blue drift apart by [px]. The platform effect is rebuilt only when
+ * the shift, rounded to a quarter pixel, changes, so a moving phone does not allocate every frame.
  */
-fun Modifier.chromaticAberration(shader: RuntimeShader?, maxShift: Dp = 5.dp, amount: () -> Float): Modifier =
-    if (shader == null) this else graphicsLayer {
-        val shift = amount().coerceIn(0f, 1f) * maxShift.toPx()
-        renderEffect = if (shift > 0.5f) {
-            shader.setFloatUniform("uShift", shift, 0f)
-            RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
-        } else null
+class ChromaticSplit(private val shader: RuntimeShader) {
+    private var shift = -1f
+    private var effect: RenderEffect? = null
+
+    fun effect(px: Float): RenderEffect? {
+        val step = (px * 4f).roundToInt() / 4f
+        if (step < 0.5f) return null
+        if (step != shift) {
+            shift = step
+            shader.setFloatUniform("uShift", step, 0f)
+            effect = PlatformRenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
+        }
+        return effect
     }
+}
+
+@Composable
+fun rememberChromaticSplit(): ChromaticSplit? {
+    val shader = rememberShader(Agsl.CHROMA)
+    return remember(shader) { shader?.let(::ChromaticSplit) }
+}

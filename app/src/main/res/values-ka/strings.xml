@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Measure -->
+    <string name="slope_value">ქანობი %1$s</string>
+    <string name="slope_percent">%1$d%%</string>
+    <string name="nearly_vertical">თითქმის ვერტიკალური</string>
+    <string name="no_sensor">დახრის სენსორი არ არის</string>
+    <string name="lock">დაფიქსირება</string>
+    <string name="save">შენახვა</string>
+    <string name="resume">გაგრძელება</string>
+
+    <!-- Top bar -->
+    <plurals name="journal_entries">
+        <item quantity="one">ჟურნალი, ჩანაწერები: %1$d</item>
+        <item quantity="other">ჟურნალი, ჩანაწერები: %1$d</item>
+    </plurals>
+    <string name="close_journal">ჟურნალის დახურვა</string>
+    <string name="settings">პარამეტრები</string>
+
+    <!-- Saving -->
+    <string name="save_measurement">გაზომვის შენახვა</string>
+    <string name="name">სახელი</string>
+    <string name="default_name">გაზომვა %1$d</string>
+    <string name="cancel">გაუქმება</string>
+    <string name="saved">შენახულია ჟურნალში</string>
+
+    <!-- Journal -->
+    <string name="journal">ჟურნალი</string>
+    <string name="journal_note">გაზომვები ინახება მხოლოდ ამ ტელეფონში</string>
+    <string name="delete_item">წაშლა: %1$s</string>
+    <string name="delete_title">წაიშალოს გაზომვა?</string>
+    <string name="delete">წაშლა</string>
+    <string name="keep">დატოვება</string>
+    <string name="empty_title">ჯერ ცარიელია</string>
+    <string name="empty_body">დააფიქსირეთ კუთხე და შეინახეთ,\nრომ გაზომვები შეადაროთ.</string>
+    <string name="measure">გაზომვა</string>
+
+    <!-- Zero calibration -->
+    <string name="zero_title">ნულის კალიბრაცია</string>
+    <string name="zero_hint">დადეთ ტელეფონი ეკრანით ზემოთ შემოწმებულ სწორ ზედაპირზე და დაელოდეთ, სანამ ჩვენება დამშვიდდება.</string>
+    <string name="zero_unavailable">დახრის სენსორი მიუწვდომელია</string>
+    <string name="zero_waiting">ველოდებით სენსორს…</string>
+    <string name="zero_too_tilted">ნულისთვის ზედმეტად დახრილია</string>
+    <string name="zero_hold_still">ტელეფონი გაუნძრევლად დაიჭირეთ…</string>
+    <string name="zero_ready">შეგიძლიათ ნულის დაყენება</string>
+    <string name="zero_current_factory">ახლა: ქარხნული ნული.</string>
+    <string name="zero_current_offset">მიმდინარე შესწორება: %1$s°.</string>
+    <string name="zero_reset">გადაყენება</string>
+    <string name="zero_set">ნულის დაყენება</string>
+    <string name="zero_done">ნული დაყენებულია</string>
+    <string name="zero_restored">ქარხნული ნული აღდგენილია</string>
+
+    <!-- Settings -->
+    <string name="color">ფერი</string>
+    <string name="color_lime">ლაიმი</string>
+    <string name="color_system">სისტემის ფერი</string>
+    <string name="calibration_note">სწორ ზედაპირზე, ეკრანით ზემოთ</string>
+    <string name="calibration_factory">ქარხნული</string>
+    <string name="haptics">ვიბრაცია დაფიქსირებისას</string>
+    <string name="live_background">ცოცხალი ფონი</string>
+    <string name="live_background_note">მოძრავი რუკა, RGB-ძვრა და ტალღა. გამორთვა ზოგავს ბატარეას.</string>
+    <string name="about_meaning">ქანობი — დახრის საზომი</string>
+    <string name="version">ვერსია %1$s</string>
+    <string name="made_by">ავტორი: whekin</string>
+    <string name="source_code">საწყისი კოდი GitHub-ზე ›</string>
+    <string name="fonts">შრიფტები: Barlow Condensed და Golos Text, SIL Open Font License</string>
+</resources>

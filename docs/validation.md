@@ -1,31 +1,33 @@
-# Проверка
+# Validation
 
-Проверено 3 октября 2026 года:
+Checked on 3 October 2026 for 1.0.0:
 
-- `:app:assembleDebug` — успешно. Debug APK: `dist/DIRT-debug.apk`.
-- `:app:testDebugUnitTest` — 4 теста, 0 ошибок, 0 пропусков: угол при разных наклонах и поворотах, отказ на нулевом и нечисловом векторе, окно стабильности, прогресс стабильности.
-- `:app:lintDebug` — без ошибок. Остаются предупреждения о более новых версиях SDK, Gradle и библиотек. Фиксированная портретная ориентация подавлена осознанно: показание само выравнивается по горизонту, а пересоздание activity сбросило бы окно стабильности.
+- `:app:assembleDebug`, `:app:assembleRelease` (R8, 2.4 MB) — pass.
+- `:app:testDebugUnitTest` — 4 tests: angle at known tilts and rolls, rejected zero and non-finite vectors, the stability window and its progress.
+- `:app:lintDebug` — no errors; only “newer version available” warnings. The fixed portrait orientation is suppressed on purpose: the readout levels itself, and recreating the activity would reset the stability window mid-measurement.
 
-На эмуляторе Pixel 9 Pro (API 36), положения задавались виртуальным акселерометром (`adb emu sensor set acceleration`):
+Release build on a Pixel 9 Pro emulator (API 36), poses set with `adb emu sensor set acceleration`:
 
-- Экраном вверх на 22°: число, уклон 40 %, стрелка шкалы на 22°, кольцо затвора заполнено.
-- На ребре, длинная сторона под 15°: шкала и цифры повёрнуты по горизонту, 0° шкалы совпадает с линией горизонта на фоне, стрелка идёт вдоль торца, слои грунта параллельны горизонту.
-- Фиксация: волна от числа, число становится лаймовым со свечением, кнопка меняется на «Сохранить», появляется «Продолжить».
-- Сохранение с названием и без него, журнал из кнопки в шапке со счётчиком, отрицательный угол (−12°), удаление с подтверждением. Записи прошлой версии с типом загружаются, тип не показывается.
-- Холодный старт около 1,2–1,5 с. Первый запуск после установки на эмуляторе занимает до 13 с: хост эмулятора впервые компилирует шейдеры, на телефоне это происходит гораздо быстрее и кэшируется.
+- Screen up at 22°: readout, slope 40 %, dial needle, shutter ring sweeping as the reading settles.
+- On the edge: the readout and dial level with the horizon; edge mode fades in from about 80° and is complete at 75°.
+- Settings: lime and Material You colours, zero calibration entry, haptics and live background switches, about with version 1.0.0 (1).
+- English, Russian and Georgian via the per-app language (`cmd locale set-app-locales`). Georgian text uses the system font, since Golos Text has no Georgian glyphs.
+- Journal: empty state, saving with and without a name, deleting with confirmation.
 
-На эмуляторе датчик гравитации виртуальный: после резкой смены акселерометра он сходится несколько секунд. На реальном телефоне гироскоп даёт мгновенный отклик.
+The previous build ran on a Galaxy S25 (Android 16): no crashes, no janky frames over 10 s at 120 Hz.
 
-Не проверено:
+The emulator's gravity sensor is virtual: after an abrupt accelerometer change it settles over several seconds, while a real phone's gyroscope makes it immediate.
 
-- Точность и шум датчиков на физическом телефоне, постановка на ребро на настоящей рейке.
-- Стоимость шейдера на реальном GPU, особенно на бюджетных телефонах.
-- Маленький экран (компактная раскладка с прокруткой), крупный системный шрифт, ввод с клавиатуры в окне сохранения.
+Not checked yet:
 
-## Проверка на телефоне
+- Sensor accuracy on a real straightedge, screen up and on the edge.
+- Shader cost on budget GPUs.
+- Small screens and large system fonts.
 
-1. Установить APK, положить телефон экраном вверх на ровный стол: показание около 0°, после неподвижности кольцо затвора заполняется и загорается лаймом.
-2. Сравнить с известными углами, например 30° и 45°, и с отрицательным углом.
-3. Поставить телефон на ребро: цифры и шкала поворачиваются по горизонту, на фоне появляется горизонт. Показание совпадает с положением экраном вверх на той же рейке, с поправкой на выступ камеры.
-4. Двигать телефон: кнопка фиксации недоступна, пока кольцо не заполнится; цифры расслаиваются и снова собираются.
-5. Зафиксировать, сдвинуть телефон: зафиксированный угол не меняется. Сохранить, открыть журнал, перезапустить приложение: запись на месте.
+## On a phone
+
+1. Lay the phone screen up on a level table: about 0°, the shutter ring fills and turns to the accent colour.
+2. Compare with known angles, e.g. 30° and 45°, and a negative one.
+3. Stand it on the long edge: the readout and dial turn level, the horizon appears; the reading matches screen-up on the same straightedge, give or take the camera bump.
+4. Move the phone: the shutter stays disabled until the ring closes; the digits split and refocus.
+5. Lock, move the phone: the locked angle stays. Save, open the journal, restart: the entry is there.

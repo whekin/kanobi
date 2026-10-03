@@ -1,15 +1,15 @@
-package com.example.dirt.measurement
+package com.kanobi.app.measurement
 
 import android.content.Context
 import androidx.core.content.edit
+import java.util.UUID
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.UUID
 
 data class Measurement(val id: String, val angle: Float, val name: String, val time: Long)
 
 class MeasurementStore(context: Context) {
-    private val prefs = context.getSharedPreferences("dirt_fieldbook", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("journal", Context.MODE_PRIVATE)
 
     fun load(): List<Measurement> = runCatching {
         val array = JSONArray(prefs.getString("measurements", "[]"))

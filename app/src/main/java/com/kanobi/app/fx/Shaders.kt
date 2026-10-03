@@ -1,4 +1,4 @@
-package com.example.dirt.fx
+package com.kanobi.app.fx
 
 /**
  * AGSL sources (Android 13+). AGSL has no derivatives, so line widths come from analytic
@@ -34,6 +34,7 @@ uniform float2 uFocus;
 uniform float3 uGlow;
 uniform float uPulse;
 uniform float3 uAccent;
+uniform float3 uBase;
 uniform float uHorizon;
 uniform float2 uUp;
 uniform float uClear;
@@ -108,7 +109,7 @@ half4 main(float2 fragCoord) {
     float shade = clamp(dot(normal, light), 0.0, 1.0);
 
     float near = exp(-dist * dist / 70000.0);
-    float3 col = float3(0.032, 0.040, 0.029) * (0.3 + 1.4 * shade) + float3(0.010, 0.013, 0.006) * t.x;
+    float3 col = uBase * (0.35 + 1.6 * shade) + uAccent * 0.012 * t.x;
     float3 ink = uAccent * mix(0.07, 0.15, major) * (1.0 + 2.0 * near * length(uGlow));
     col = mix(col, ink, line * mix(0.5, 0.85, major));
     col += uGlow * near * 0.08;
@@ -124,7 +125,7 @@ half4 main(float2 fragCoord) {
         float strong = 1.0 - step(0.5, mod(floor(y / 11.0 + 0.5), 4.0));
         float thickness = mix(0.3, 0.6, strong);
         float strata = 1.0 - smoothstep(thickness - pixel, thickness + pixel, min(g, 1.0 - g) * 11.0);
-        float3 ground = float3(0.018, 0.022, 0.016) + uAccent * strata * mix(0.07, 0.15, strong) * exp(-depth / 320.0);
+        float3 ground = uBase * 0.55 + uAccent * strata * mix(0.07, 0.15, strong) * exp(-depth / 320.0);
         col = mix(col, ground, smoothstep(-pixel, pixel, -above) * uHorizon);
         float core = 1.0 - smoothstep(0.6, 0.6 + 2.0 * pixel, abs(above));
         float gap = smoothstep(uClear * 0.9, uClear + 12.0, length(fromFocus));

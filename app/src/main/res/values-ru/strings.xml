@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Measure -->
+    <string name="slope_value">уклон %1$s</string>
+    <string name="slope_percent">%1$d %%</string>
+    <string name="nearly_vertical">почти вертикально</string>
+    <string name="no_sensor">нет датчика наклона</string>
+    <string name="lock">Зафиксировать</string>
+    <string name="save">Сохранить</string>
+    <string name="resume">Продолжить</string>
+
+    <!-- Top bar -->
+    <plurals name="journal_entries">
+        <item quantity="one">Журнал, %1$d запись</item>
+        <item quantity="few">Журнал, %1$d записи</item>
+        <item quantity="many">Журнал, %1$d записей</item>
+        <item quantity="other">Журнал, %1$d записи</item>
+    </plurals>
+    <string name="close_journal">Закрыть журнал</string>
+    <string name="settings">Настройки</string>
+
+    <!-- Saving -->
+    <string name="save_measurement">Сохранить замер</string>
+    <string name="name">Название</string>
+    <string name="default_name">Замер %1$d</string>
+    <string name="cancel">Отмена</string>
+    <string name="saved">Сохранено в журнал</string>
+
+    <!-- Journal -->
+    <string name="journal">Журнал</string>
+    <string name="journal_note">Замеры хранятся только на этом телефоне</string>
+    <string name="delete_item">Удалить %1$s</string>
+    <string name="delete_title">Удалить замер?</string>
+    <string name="delete">Удалить</string>
+    <string name="keep">Оставить</string>
+    <string name="empty_title">Пока пусто</string>
+    <string name="empty_body">Зафиксируй угол и сохрани его,\nчтобы сравнивать замеры.</string>
+    <string name="measure">Сделать замер</string>
+
+    <!-- Zero calibration -->
+    <string name="zero_title">Калибровка нуля</string>
+    <string name="zero_hint">Положи телефон экраном вверх на проверенную ровную поверхность и дождись, пока показание успокоится.</string>
+    <string name="zero_unavailable">Датчик наклона недоступен</string>
+    <string name="zero_waiting">Ждём датчик…</string>
+    <string name="zero_too_tilted">Слишком большой наклон для нуля</string>
+    <string name="zero_hold_still">Подержи телефон неподвижно…</string>
+    <string name="zero_ready">Можно задать ноль</string>
+    <string name="zero_current_factory">Сейчас: заводской ноль.</string>
+    <string name="zero_current_offset">Сейчас поправка %1$s°.</string>
+    <string name="zero_reset">Сбросить</string>
+    <string name="zero_set">Задать ноль</string>
+    <string name="zero_done">Ноль задан</string>
+    <string name="zero_restored">Заводской ноль</string>
+
+    <!-- Settings -->
+    <string name="color">Цвет</string>
+    <string name="color_lime">Лайм</string>
+    <string name="color_system">Цвет системы</string>
+    <string name="calibration_note">На ровной поверхности, экраном вверх</string>
+    <string name="calibration_factory">заводская</string>
+    <string name="haptics">Вибрация при фиксации</string>
+    <string name="live_background">Живой фон</string>
+    <string name="live_background_note">Дрейф карты, RGB-сдвиг и волна. Без них экономнее.</string>
+    <string name="about_meaning">ქანობი — «уклон» по-грузински</string>
+    <string name="version">Версия %1$s</string>
+    <string name="made_by">Сделано whekin</string>
+    <string name="source_code">Исходный код на GitHub ›</string>
+    <string name="fonts">Шрифты Barlow Condensed и Golos Text — SIL Open Font License</string>
+</resources>

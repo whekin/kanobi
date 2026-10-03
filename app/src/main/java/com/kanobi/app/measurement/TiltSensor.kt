@@ -1,4 +1,4 @@
-package com.example.dirt.measurement
+package com.kanobi.app.measurement
 
 import android.content.Context
 import android.hardware.Sensor

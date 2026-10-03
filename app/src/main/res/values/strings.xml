@@ -1,3 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DIRT</string>
+    <string name="app_name" translatable="false">Kanobi</string>
+
+    <!-- Measure -->
+    <string name="slope_value">slope %1$s</string>
+    <string name="slope_percent">%1$d%%</string>
+    <string name="nearly_vertical">nearly vertical</string>
+    <string name="no_sensor">no tilt sensor</string>
+    <string name="lock">Lock</string>
+    <string name="save">Save</string>
+    <string name="resume">Resume</string>
+
+    <!-- Top bar -->
+    <plurals name="journal_entries">
+        <item quantity="one">Journal, %1$d entry</item>
+        <item quantity="other">Journal, %1$d entries</item>
+    </plurals>
+    <string name="close_journal">Close journal</string>
+    <string name="settings">Settings</string>
+
+    <!-- Saving -->
+    <string name="save_measurement">Save measurement</string>
+    <string name="name">Name</string>
+    <string name="default_name">Measurement %1$d</string>
+    <string name="cancel">Cancel</string>
+    <string name="saved">Saved to journal</string>
+
+    <!-- Journal -->
+    <string name="journal">Journal</string>
+    <string name="journal_note">Measurements stay on this phone</string>
+    <string name="delete_item">Delete %1$s</string>
+    <string name="delete_title">Delete measurement?</string>
+    <string name="delete">Delete</string>
+    <string name="keep">Keep</string>
+    <string name="empty_title">Nothing yet</string>
+    <string name="empty_body">Lock an angle and save it\nto compare measurements.</string>
+    <string name="measure">Measure</string>
+
+    <!-- Zero calibration -->
+    <string name="zero_title">Zero calibration</string>
+    <string name="zero_hint">Lay the phone screen up on a surface you know is level and wait for the reading to settle.</string>
+    <string name="zero_unavailable">Tilt sensor unavailable</string>
+    <string name="zero_waiting">Waiting for the sensor…</string>
+    <string name="zero_too_tilted">Too tilted to zero</string>
+    <string name="zero_hold_still">Hold the phone still…</string>
+    <string name="zero_ready">Ready to zero</string>
+    <string name="zero_current_factory">Currently: factory zero.</string>
+    <string name="zero_current_offset">Current offset: %1$s°.</string>
+    <string name="zero_reset">Reset</string>
+    <string name="zero_set">Set zero</string>
+    <string name="zero_done">Zero set</string>
+    <string name="zero_restored">Factory zero restored</string>
+
+    <!-- Settings -->
+    <string name="color">Color</string>
+    <string name="color_lime">Lime</string>
+    <string name="color_system">System color</string>
+    <string name="calibration_note">On a level surface, screen up</string>
+    <string name="calibration_factory">factory</string>
+    <string name="haptics">Vibrate on lock</string>
+    <string name="live_background">Live background</string>
+    <string name="live_background_note">Drifting map, RGB split and the lock pulse. Off saves battery.</string>
+    <string name="about_meaning">ქანობი — Georgian for “slope”</string>
+    <string name="version">Version %1$s</string>
+    <string name="made_by">Made by whekin</string>
+    <string name="source_code">Source code on GitHub ›</string>
+    <string name="fonts">Fonts: Barlow Condensed and Golos Text, SIL Open Font License</string>
 </resources>

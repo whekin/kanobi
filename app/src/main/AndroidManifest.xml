@@ -5,9 +5,10 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DIRT">
+        android:theme="@style/Theme.Kanobi">
         <!-- An inclinometer must not re-layout when tilted: the readout follows the horizon itself,
              and recreating the activity would reset the stability window mid-measurement. -->
         <activity
