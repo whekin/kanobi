@@ -39,7 +39,7 @@
 
     <!-- Zero calibration -->
     <string name="zero_title">Zero calibration</string>
-    <string name="zero_hint">Lay the phone screen up on a surface you know is level and wait for the reading to settle.</string>
+    <string name="zero_hint">Place the phone on a known level surface in the position you use to measure. Each side has its own zero; wait for a stable reading.</string>
     <string name="zero_unavailable">Tilt sensor unavailable</string>
     <string name="zero_waiting">Waiting for the sensor…</string>
     <string name="zero_too_tilted">Too tilted to zero</string>
@@ -56,7 +56,7 @@
     <string name="color">Color</string>
     <string name="color_lime">Lime</string>
     <string name="color_system">System color</string>
-    <string name="calibration_note">On a level surface, screen up</string>
+    <string name="calibration_note">A separate zero for each contact side</string>
     <string name="calibration_factory">factory</string>
     <string name="haptics">Vibrate on lock</string>
     <string name="live_background">Live background</string>
@@ -66,4 +66,15 @@
     <string name="made_by">Made by whekin</string>
     <string name="source_code">Source code on GitHub ›</string>
     <string name="fonts">Fonts: Barlow Condensed and Golos Text, SIL Open Font License</string>
+    <string name="calibration_custom">custom</string>
+    <string name="contact_screen_up">Screen up</string>
+    <string name="contact_left">Left long edge</string>
+    <string name="contact_right">Right long edge</string>
+    <string name="zero_contact">Lay the phone screen up or stand it firmly on a long edge.</string>
+    <string name="guide_title">How to measure</string>
+    <string name="guide_done">Got it</string>
+    <string name="guide_contact">Place a straightedge tangent to the last part of the takeoff. Rest the phone along it, screen up or on a long edge.</string>
+    <string name="guide_direction">Point the top of the phone towards the lip. A plus means the takeoff rises towards the top of the phone; a minus means it falls.</string>
+    <string name="guide_zero">Set zero on a known level surface in the same contact position. Screen up, left edge and right edge have separate calibration.</string>
+    <string name="guide_lock">The angle updates live. Hold still until the ring fills, then lock and save. Stability is not a guarantee of sensor accuracy.</string>
 </resources>

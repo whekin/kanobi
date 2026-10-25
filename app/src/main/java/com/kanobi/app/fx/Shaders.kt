@@ -139,17 +139,4 @@ half4 main(float2 fragCoord) {
     return half4(half3(max(col, float3(0.0))), 1.0);
 }
 """
-
-    /** RGB split for a layer: red and blue sampled on either side of the original. */
-    const val CHROMA = """
-uniform shader content;
-uniform float2 uShift;
-
-half4 main(float2 fragCoord) {
-    half4 base = content.eval(fragCoord);
-    half4 red = content.eval(fragCoord + uShift);
-    half4 blue = content.eval(fragCoord - uShift);
-    return half4(red.r, base.g, blue.b, max(base.a, max(red.a, blue.a)));
-}
-"""
 }

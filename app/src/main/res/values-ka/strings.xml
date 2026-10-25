@@ -37,7 +37,7 @@
 
     <!-- Zero calibration -->
     <string name="zero_title">ნულის კალიბრაცია</string>
-    <string name="zero_hint">დადეთ ტელეფონი ეკრანით ზემოთ შემოწმებულ სწორ ზედაპირზე და დაელოდეთ, სანამ ჩვენება დამშვიდდება.</string>
+    <string name="zero_hint">დადეთ ტელეფონი შემოწმებულ ჰორიზონტალურ ზედაპირზე გაზომვის პოზიციაში. თითოეულ მხარეს თავისი ნული აქვს. დაელოდეთ სტაბილურ ჩვენებას.</string>
     <string name="zero_unavailable">დახრის სენსორი მიუწვდომელია</string>
     <string name="zero_waiting">ველოდებით სენსორს…</string>
     <string name="zero_too_tilted">ნულისთვის ზედმეტად დახრილია</string>
@@ -54,7 +54,7 @@
     <string name="color">ფერი</string>
     <string name="color_lime">ლაიმი</string>
     <string name="color_system">სისტემის ფერი</string>
-    <string name="calibration_note">სწორ ზედაპირზე, ეკრანით ზემოთ</string>
+    <string name="calibration_note">ცალკე ნული თითოეული მხარისთვის</string>
     <string name="calibration_factory">ქარხნული</string>
     <string name="haptics">ვიბრაცია დაფიქსირებისას</string>
     <string name="live_background">ცოცხალი ფონი</string>
@@ -64,4 +64,15 @@
     <string name="made_by">ავტორი: whekin</string>
     <string name="source_code">საწყისი კოდი GitHub-ზე ›</string>
     <string name="fonts">შრიფტები: Barlow Condensed და Golos Text, SIL Open Font License</string>
+    <string name="calibration_custom">დაყენებულია</string>
+    <string name="contact_screen_up">ეკრანით ზემოთ</string>
+    <string name="contact_left">მარცხენა გრძელი გვერდი</string>
+    <string name="contact_right">მარჯვენა გრძელი გვერდი</string>
+    <string name="zero_contact">დადეთ ტელეფონი ეკრანით ზემოთ ან მყარად დააყენეთ გრძელ გვერდზე.</string>
+    <string name="guide_title">როგორ გავზომოთ</string>
+    <string name="guide_done">გასაგებია</string>
+    <string name="guide_contact">სწორი ლარტყა მოათავსეთ ტრამპლინის ბოლო მონაკვეთის გასწვრივ. ტელეფონი დადეთ ლარტყის გასწვრივ ეკრანით ზემოთ ან გრძელ გვერდზე.</string>
+    <string name="guide_direction">ტელეფონის ზედა ბოლო მიმართეთ ტრამპლინის კიდისკენ. პლუსი ნიშნავს აწევას ზედა ბოლოსკენ, მინუსი — დაშვებას.</string>
+    <string name="guide_zero">ნული დააყენეთ ჰორიზონტალურ ზედაპირზე იმავე პოზიციაში. ეკრანით ზემოთ, მარცხენა და მარჯვენა გვერდებს ცალკე შესწორებები აქვთ.</string>
+    <string name="guide_lock">კუთხე განახლდება პირდაპირ. დაელოდეთ რგოლის შევსებას, დააფიქსირეთ და შეინახეთ. სტაბილურობა არ ნიშნავს სენსორის სიზუსტის გარანტიას.</string>
 </resources>

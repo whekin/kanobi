@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -45,12 +46,11 @@ import com.kanobi.app.settings.Settings
 import com.kanobi.app.theme.BrandPalette
 import com.kanobi.app.theme.DisplayFont
 import com.kanobi.app.theme.KanobiTheme
-import kotlin.math.abs
 
 const val RepositoryUrl = "https://github.com/whekin/kanobi"
 
 @Composable
-fun SettingsSheet(settings: Settings, systemAccent: Color, onCalibrate: () -> Unit, onDismiss: () -> Unit) {
+fun SettingsSheet(settings: Settings, systemAccent: Color, onCalibrate: () -> Unit, onGuide: () -> Unit, onDismiss: () -> Unit) {
     val colors = KanobiTheme.colors
     AppSheet(onDismiss) { close ->
         Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -74,9 +74,12 @@ fun SettingsSheet(settings: Settings, systemAccent: Color, onCalibrate: () -> Un
                     Text(stringResource(R.string.zero_title), color = colors.text, fontSize = 16.sp)
                     Text(stringResource(R.string.calibration_note), color = colors.muted, fontSize = 12.sp)
                 }
-                Text(if (abs(settings.zero) < 0.01f) stringResource(R.string.calibration_factory) else "${degrees(settings.zero)}°",
+                Text(if (settings.calibration == com.kanobi.app.measurement.Calibration()) stringResource(R.string.calibration_factory) else stringResource(R.string.calibration_custom),
                     color = colors.accent, fontSize = 14.sp)
                 Text("  ›", color = colors.muted, fontSize = 18.sp)
+            }
+            TextButton(onClick = { close(onGuide) }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.guide_title), color = colors.accent)
             }
             Toggle(stringResource(R.string.haptics), null, settings.haptics) { settings.haptics = it }
             Toggle(stringResource(R.string.live_background), stringResource(R.string.live_background_note), settings.live) { settings.live = it }

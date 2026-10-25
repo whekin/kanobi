@@ -18,8 +18,8 @@ android {
         applicationId = "com.kanobi.app"
         minSdk = 33
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.0.2"
     }
 
     signingConfigs {
@@ -38,6 +38,11 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+    }
+    buildTypes.create("benchmark") {
+        initWith(buildTypes.getByName("release"))
+        applicationIdSuffix = ".benchmark"
+        matchingFallbacks += "release"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

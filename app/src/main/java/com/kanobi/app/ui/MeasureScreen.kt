@@ -46,8 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -66,6 +68,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -75,8 +79,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.kanobi.app.R
-import com.kanobi.app.fx.rememberChromaticSplit
 import com.kanobi.app.measurement.Reading
+import com.kanobi.app.measurement.Calibration
 import com.kanobi.app.theme.DisplayFont
 import com.kanobi.app.theme.KanobiTheme
 import kotlin.math.PI
@@ -94,7 +98,7 @@ import kotlin.math.sin
 fun MeasureScreen(
     reading: () -> Reading,
     available: Boolean,
-    zero: Float,
+    calibration: Calibration,
     held: Float?,
     live: Boolean,
     focus: FocusPoint,
@@ -105,7 +109,7 @@ fun MeasureScreen(
     val current = reading()
     val locked = held != null
     val valid = locked || current.ready
-    val angle = held ?: (current.angle - zero).coerceIn(-90f, 90f)
+    val angle = held ?: calibration.correct(current)
     val stable = !locked && current.ready && current.stable
     val tone = when {
         locked -> Tone.Locked
@@ -233,9 +237,9 @@ private fun rememberLevel(reading: () -> Reading, screenTurn: Float): Level {
             val current = latest()
             val goal = wrap(current.roll - screenTurn) * levelWeight(current)
             val turn = wrap(goal - level.turn)
-            if (abs(turn) > 0.02f) level.turn += turn * (1f - exp(-dt / 0.1f))
+            if (abs(turn) > 0.02f) level.turn = InstrumentResponse.follow(level.turn, level.turn + turn, dt, InstrumentResponse.TurnTimeConstant)
             val edge = edgeWeight(current) - level.edge
-            if (abs(edge) > 0.001f) level.edge += edge * (1f - exp(-dt / 0.12f))
+            if (abs(edge) > 0.001f) level.edge = InstrumentResponse.follow(level.edge, level.edge + edge, dt, InstrumentResponse.EdgeTimeConstant)
         }
     }
     return level
@@ -255,14 +259,13 @@ private val ReadoutStyle = TextStyle(
     lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
 )
 
-/** The big number. Motion splits it into RGB fringes; holding still brings it into focus. */
+/** Split glyph colours directly in the canvas, without an offscreen text RuntimeShader. */
 @Composable
 private fun Readout(angle: Float?, tone: Tone, motion: Float, modifier: Modifier = Modifier) {
     val colors = KanobiTheme.colors
-    val split = rememberChromaticSplit()
     val locked = tone == Tone.Locked
+    val shift = (motion / 30f).coerceIn(0f, 1f) * 5.dp.value * LocalDensity.current.density
     val color by animateColorAsState(if (locked) colors.accent else colors.text, tween(260), label = "readout")
-    val shift = (motion / 30f).coerceIn(0f, 1f)
     val pop = remember { Animatable(1f) }
     LaunchedEffect(locked) {
         if (locked) {
@@ -277,7 +280,6 @@ private fun Readout(angle: Float?, tone: Tone, motion: Float, modifier: Modifier
             .graphicsLayer {
                 scaleX = pop.value
                 scaleY = pop.value
-                renderEffect = split?.effect(shift * 5.dp.toPx())
             }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -287,14 +289,32 @@ private fun Readout(angle: Float?, tone: Tone, motion: Float, modifier: Modifier
             angle > 0f -> "+"
             else -> "−"
         }
-        Text(sign, Modifier.width((em * 0.24f).dp), color = colors.muted, fontSize = size * 0.42f, textAlign = TextAlign.Center, style = ReadoutStyle)
-        Text(angle?.let { degrees(abs(it)) } ?: "—", Modifier.alignByBaseline(), color = color, fontSize = size,
-            style = ReadoutStyle.copy(shadow = if (locked) Shadow(colors.accent.copy(alpha = 0.55f), blurRadius = 56f) else null))
+        ChromaticText(sign, Modifier.width((em * 0.24f).dp), colors.muted, ReadoutStyle.copy(fontSize = size * 0.42f, textAlign = TextAlign.Center), shift)
+        ChromaticText(angle?.let { degrees(abs(it)) } ?: "—", Modifier.alignByBaseline(), color,
+            ReadoutStyle.copy(fontSize = size, shadow = if (locked) Shadow(colors.accent.copy(alpha = 0.55f), blurRadius = 56f) else null), shift)
         // Half-size degree sign, raised from the shared baseline to the top of the digits. A layer
         // offset, unlike Modifier.offset, leaves the baseline the row aligns on untouched.
-        Text("°", Modifier.alignByBaseline().graphicsLayer { translationY = -(em * 0.35f).dp.toPx() },
-            color = colors.accent, fontSize = size * 0.5f, style = ReadoutStyle)
+        ChromaticText("°", Modifier.alignByBaseline().graphicsLayer { translationY = -(em * 0.35f).dp.toPx() },
+            colors.accent, ReadoutStyle.copy(fontSize = size * 0.5f), shift)
     }
+}
+
+/** Three atlas-backed glyph draws preserve the RGB fringes without RenderEffect or saveLayer.
+ * The green pass covers the background; additive red and blue give the original colour where
+ * the glyphs overlap. Layout stays the same as an ordinary accessible Text. */
+@Composable
+private fun ChromaticText(text: String, modifier: Modifier, color: Color, style: TextStyle, shift: Float) {
+    val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
+    Text(text, modifier.drawWithContent {
+        val result = layout.value
+        if (shift < .5f || result == null) {
+            drawContent()
+        } else {
+            drawText(result, color = Color(0f, color.green, 0f, color.alpha))
+            drawText(result, color = Color(color.red, 0f, 0f, color.alpha), topLeft = Offset(-shift, 0f), blendMode = BlendMode.Plus)
+            drawText(result, color = Color(0f, 0f, color.blue, color.alpha), topLeft = Offset(shift, 0f), blendMode = BlendMode.Plus)
+        }
+    }, color = color, style = style, onTextLayout = { layout.value = it })
 }
 
 private enum class ShutterMode { Waiting, Ready, Held }
@@ -307,7 +327,7 @@ private enum class ShutterMode { Waiting, Ready, Held }
 @Composable
 private fun Shutter(mode: ShutterMode, progress: () -> Float, onClick: () -> Unit) {
     val colors = KanobiTheme.colors
-    val fill by animateFloatAsState(if (mode == ShutterMode.Waiting) 0f else 1f, tween(320, easing = FastOutSlowInEasing), label = "fill")
+    val fill by animateFloatAsState(if (mode == ShutterMode.Waiting) 0f else 1f, tween(100, easing = FastOutSlowInEasing), label = "fill")
     val ring = rememberSweep { if (mode == ShutterMode.Held) 1f else progress() }
     val breath = if (mode == ShutterMode.Ready) rememberInfiniteTransition(label = "breath")
         .animateFloat(0f, 1f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "glow")

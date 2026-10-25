@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <profileable android:shell="true" />
+        <activity android:name="com.kanobi.app.MainActivity" android:enabled="false" />
+        <activity android:name="com.kanobi.app.benchmark.ReplayActivity" android:exported="true" android:screenOrientation="portrait" android:label="Kanobi performance replay" />
+    </application>
+</manifest>

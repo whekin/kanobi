@@ -39,7 +39,7 @@
 
     <!-- Zero calibration -->
     <string name="zero_title">Калибровка нуля</string>
-    <string name="zero_hint">Положи телефон экраном вверх на проверенную ровную поверхность и дождись, пока показание успокоится.</string>
+    <string name="zero_hint">Приложи телефон к проверенной горизонтальной поверхности в том положении, в котором измеряешь. У каждой стороны свой ноль; дождись стабильного показания.</string>
     <string name="zero_unavailable">Датчик наклона недоступен</string>
     <string name="zero_waiting">Ждём датчик…</string>
     <string name="zero_too_tilted">Слишком большой наклон для нуля</string>
@@ -56,7 +56,7 @@
     <string name="color">Цвет</string>
     <string name="color_lime">Лайм</string>
     <string name="color_system">Цвет системы</string>
-    <string name="calibration_note">На ровной поверхности, экраном вверх</string>
+    <string name="calibration_note">Отдельный ноль для каждой стороны</string>
     <string name="calibration_factory">заводская</string>
     <string name="haptics">Вибрация при фиксации</string>
     <string name="live_background">Живой фон</string>
@@ -66,4 +66,15 @@
     <string name="made_by">Сделано whekin</string>
     <string name="source_code">Исходный код на GitHub ›</string>
     <string name="fonts">Шрифты Barlow Condensed и Golos Text — SIL Open Font License</string>
+    <string name="calibration_custom">задана</string>
+    <string name="contact_screen_up">Экраном вверх</string>
+    <string name="contact_left">Левая длинная грань</string>
+    <string name="contact_right">Правая длинная грань</string>
+    <string name="zero_contact">Положи телефон экраном вверх или устойчиво поставь на длинную грань.</string>
+    <string name="guide_title">Как измерять</string>
+    <string name="guide_done">Понятно</string>
+    <string name="guide_contact">Приложи прямую рейку по касательной к последнему участку вылета. Телефон положи вдоль неё экраном вверх или поставь на длинную грань.</string>
+    <string name="guide_direction">Верхний торец направь к краю вылета. Плюс означает подъём к верхнему торцу, минус — спуск.</string>
+    <string name="guide_zero">Задай ноль на проверенной горизонтальной поверхности в том же положении. Для экрана вверх, левой и правой грани поправки отдельные.</string>
+    <string name="guide_lock">Угол обновляется сразу. Дождись заполнения кольца, зафиксируй и сохрани. Стабильность показания не гарантирует точность датчика.</string>
 </resources>

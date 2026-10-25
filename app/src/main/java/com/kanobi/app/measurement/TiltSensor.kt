@@ -26,6 +26,7 @@ data class Reading(
     /** "Up" projected on the screen plane as a share of gravity: x towards the right edge, y towards the top. */
     val upX: Float = 0f,
     val upY: Float = 0f,
+    val upZ: Float = 1f,
 ) {
     /** 0 lying flat, 1 with the screen vertical; below ~0.3 the roll direction is mostly noise. */
     val inPlane get() = hypot(upX, upY)
@@ -34,14 +35,14 @@ data class Reading(
     val roll get() = Math.toDegrees(atan2(upX, upY).toDouble()).toFloat()
 }
 
-class TiltSensor(context: Context) : SensorEventListener {
+class TiltSensor(context: Context) : SensorEventListener, TiltSource {
     private val manager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val sensor = manager.getDefaultSensor(Sensor.TYPE_GRAVITY)
         ?: manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-    val available get() = sensor != null
-    var reading by mutableStateOf(Reading())
+    override val available get() = sensor != null
+    override var reading by mutableStateOf(Reading())
         private set
-    private val filtered = FloatArray(3)
+    private val fallbackFilter = GravityFilter()
     private var initialized = false
     private var lastEvent = 0L
     private var lastTimestamp = 0L
@@ -49,28 +50,32 @@ class TiltSensor(context: Context) : SensorEventListener {
     private val window = StabilityWindow()
     private var reliable = true
 
-    fun start() {
+    override fun start() {
         stop()
         initialized = false
         reliable = true
-        sensor?.let { manager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+        fallbackFilter.clear()
+        // 100 Hz, no batching: current samples reach the UI without a hardware FIFO delay.
+        sensor?.let { manager.registerListener(this, it, 10_000, 0) }
     }
 
-    fun stop() {
+    override fun stop() {
         manager.unregisterListener(this)
         invalidate()
     }
 
-    fun checkFreshness() {
+    override fun checkFreshness() {
         if (SystemClock.elapsedRealtime() - lastEvent > 1500L) invalidate()
     }
 
     override fun onSensorChanged(event: SensorEvent) {
         val dt = if (initialized) (event.timestamp - lastTimestamp) / 1_000_000_000f else 0f
         lastTimestamp = event.timestamp
-        val alpha = if (sensor?.type == Sensor.TYPE_ACCELEROMETER) exp(-dt / 0.22f) else 0f
-        for (i in 0..2) filtered[i] = if (!initialized) event.values[i]
-            else alpha * filtered[i] + (1f - alpha) * event.values[i]
+        if (SystemClock.elapsedRealtimeNanos() - event.timestamp > 1_500_000_000L) {
+            invalidate()
+            return
+        }
+        val filtered = if (sensor?.type == Sensor.TYPE_ACCELEROMETER) fallbackFilter.update(event.values, dt) else event.values
         initialized = true
         lastEvent = SystemClock.elapsedRealtime()
         val angle = AngleMath.inclination(filtered[0], filtered[1], filtered[2])
@@ -81,7 +86,7 @@ class TiltSensor(context: Context) : SensorEventListener {
         motion = if (reading.ready && dt > 0f) motion + (abs(angle - reading.angle) / dt - motion) * (1f - exp(-dt / 0.12f)) else 0f
         val stable = window.add(lastEvent, angle)
         val magnitude = sqrt(filtered[0] * filtered[0] + filtered[1] * filtered[1] + filtered[2] * filtered[2])
-        reading = Reading(angle, true, stable, window.progress, motion, filtered[0] / magnitude, filtered[1] / magnitude)
+        reading = Reading(angle, true, stable, window.progress, motion, filtered[0] / magnitude, filtered[1] / magnitude, filtered[2] / magnitude)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {

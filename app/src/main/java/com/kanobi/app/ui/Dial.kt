@@ -56,7 +56,7 @@ fun dialInner(radius: Float, density: Float) = radius - 30f * density
 @Composable
 fun AngleDial(angle: Float, tone: Tone, modifier: Modifier = Modifier, turn: () -> Float = { 0f }, edge: () -> Float = { 0f }) {
     val colors = KanobiTheme.colors
-    val shown by rememberEased(angle, 0.12f)
+    val shown by rememberEased(angle, InstrumentResponse.DialTimeConstant)
     val energy by animateFloatAsState(
         when (tone) {
             Tone.Idle -> 0.2f
@@ -81,7 +81,11 @@ fun AngleDial(angle: Float, tone: Tone, modifier: Modifier = Modifier, turn: () 
     }
     val measurer = rememberTextMeasurer()
     val label = TextStyle(fontFamily = BodyFont, fontSize = 10.sp, color = colors.muted)
-    Spacer(modifier.graphicsLayer { rotationZ = turn() }.drawWithCache {
+    val latestTone by rememberUpdatedState(tone)
+    val latestEdge by rememberUpdatedState(edge)
+    // Keep the cache block itself stable across sensor-rate recompositions. Only the dynamic
+    // draw reads the current needle, so the ring paths and text layouts survive every sample.
+    val drawing = remember(colors, measurer, label) { Modifier.drawWithCache {
         val radius = min(size.width, size.height) / 2f * DialFill
         val middle = Offset(size.width / 2f, size.height / 2f)
         val ring = ticks(middle, radius, every = 2, skip = 10, length = 4.dp.toPx())
@@ -97,8 +101,8 @@ fun AngleDial(angle: Float, tone: Tone, modifier: Modifier = Modifier, turn: () 
         onDrawBehind {
             val a = shown
             val strength = energy + flash.value * 0.8f
-            val side = edge()
-            if (flash.value > 0f || tone == Tone.Locked) {
+            val side = latestEdge()
+            if (flash.value > 0f || latestTone == Tone.Locked) {
                 drawCircle(Brush.radialGradient(listOf(Color.Transparent, colors.accent.copy(alpha = 0.10f * strength), Color.Transparent),
                     center, radius * 1.15f), radius * 1.15f)
             }
@@ -112,10 +116,11 @@ fun AngleDial(angle: Float, tone: Tone, modifier: Modifier = Modifier, turn: () 
             // On its edge the readout sits in the middle, so the needle starts outside it.
             val clear = dialInner(radius, density) * side
             drawSector(radius * 0.62f + clear * 0.38f, a, accent, strength, fill = 1f - side)
-            drawNeedle(radius * 0.94f, clear, a, if (tone == Tone.Idle) colors.muted else colors.accent, strength,
+            drawNeedle(radius * 0.94f, clear, a, if (latestTone == Tone.Idle) colors.muted else colors.accent, strength,
                 hub = 1f - side, hubFill = colors.background, hubLine = colors.text)
         }
-    })
+    } }
+    Spacer(modifier.graphicsLayer { rotationZ = turn() }.then(drawing))
 }
 
 /** Tiny dial for journal rows: horizon, needle and the angle sector. */
@@ -146,7 +151,7 @@ fun rememberEased(target: Float, timeConstant: Float): State<Float> {
             val dt = if (previous == 0L) 0f else ((now - previous) / 1e9f).coerceAtMost(0.05f)
             previous = now
             val delta = latest - value.floatValue
-            if (abs(delta) > 0.01f) value.floatValue += delta * (1f - exp(-dt / timeConstant))
+            if (abs(delta) > 0.01f) value.floatValue = InstrumentResponse.follow(value.floatValue, latest, dt, timeConstant)
         }
     }
     return value

@@ -56,9 +56,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kanobi.app.R
 import com.kanobi.app.fx.Ambience
 import com.kanobi.app.fx.AmbientTerrain
+import com.kanobi.app.measurement.Calibration
 import com.kanobi.app.measurement.Measurement
 import com.kanobi.app.measurement.MeasurementStore
 import com.kanobi.app.measurement.Reading
+import com.kanobi.app.measurement.TiltSource
 import com.kanobi.app.measurement.TiltSensor
 import com.kanobi.app.settings.Settings
 import com.kanobi.app.theme.DisplayFont
@@ -79,18 +81,18 @@ class FocusPoint {
     var clear = 0f
 }
 
-private enum class Sheet { Save, Settings, Zero }
+private enum class Sheet { Save, Settings, Zero, Guide }
 
 @Composable
-fun KanobiApp(settings: Settings) {
+fun KanobiApp(settings: Settings, sensorSource: TiltSource? = null) {
     val context = LocalContext.current
     val view = LocalView.current
     val colors = KanobiTheme.colors
-    val sensor = remember { TiltSensor(context.applicationContext) }
+    val sensor = remember(sensorSource) { sensorSource ?: TiltSensor(context.applicationContext) }
     val store = remember { MeasurementStore(context.applicationContext) }
     val systemAccent = remember { systemPalette(context).accent }
     var journal by rememberSaveable { mutableStateOf(false) }
-    var sheet by rememberSaveable { mutableStateOf<Sheet?>(null) }
+    var sheet by rememberSaveable { mutableStateOf<Sheet?>(if (settings.guideSeen) null else Sheet.Guide) }
     var held by rememberSaveable { mutableStateOf<Float?>(null) }
     var measurements by remember { mutableStateOf(store.load()) }
     var pendingDelete by remember { mutableStateOf<Measurement?>(null) }
@@ -103,13 +105,13 @@ fun KanobiApp(settings: Settings) {
     val zeroDone = stringResource(R.string.zero_done)
     val zeroRestored = stringResource(R.string.zero_restored)
 
-    SensorWhile(sensor, active = !journal)
+    SensorWhile(sensor, active = !journal || sheet == Sheet.Zero)
     BackHandler(enabled = journal) { journal = false }
 
     Box(Modifier.fillMaxSize().background(colors.background).then(if (journal) Modifier else Modifier.keepScreenOn())) {
         val turn = screenTurn()
         AmbientTerrain(
-            { ambience(journal, sensor.reading, settings.zero, held != null, focus, turn, pulses, colors) },
+            { ambience(journal, sensor.reading, settings.calibration, held != null, focus, turn, pulses, colors) },
             colors.accent, colors.background, settings.live, Modifier.fillMaxSize(),
         )
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))) {
@@ -125,7 +127,7 @@ fun KanobiApp(settings: Settings) {
                     JournalScreen(measurements, onDelete = { pendingDelete = it }, onMeasure = { journal = false })
                 } else {
                     MeasureScreen(
-                        reading = { sensor.reading }, available = sensor.available, zero = settings.zero, held = held,
+                        reading = { sensor.reading }, available = sensor.available, calibration = settings.calibration, held = held,
                         live = settings.live, focus = focus,
                         onLock = { angle ->
                             held = angle
@@ -155,17 +157,19 @@ fun KanobiApp(settings: Settings) {
             },
             onDismiss = { sheet = null },
         )
-        Sheet.Settings -> SettingsSheet(settings, systemAccent, onCalibrate = { sheet = Sheet.Zero }, onDismiss = { sheet = null })
+        Sheet.Settings -> SettingsSheet(settings, systemAccent, onCalibrate = { sheet = Sheet.Zero },
+            onGuide = { sheet = Sheet.Guide }, onDismiss = { sheet = null })
+        Sheet.Guide -> GuideSheet(onDismiss = { settings.guideSeen = true; sheet = null })
         Sheet.Zero -> ZeroSheet(
-            reading = { sensor.reading }, available = sensor.available, zero = settings.zero,
-            onSet = { value ->
-                settings.zero = value
+            reading = { sensor.reading }, available = sensor.available, calibration = settings.calibration,
+            onSet = { side, value ->
+                settings.setZero(side, value)
                 held = null
                 sheet = null
                 notify(zeroDone)
             },
-            onReset = {
-                settings.zero = 0f
+            onReset = { side ->
+                settings.setZero(side, 0f)
                 held = null
                 sheet = null
                 notify(zeroRestored)
@@ -216,7 +220,7 @@ private fun TopBar(journal: Boolean, count: Int, onJournal: () -> Unit, onSettin
 
 /** Runs the sensor only while the measure page is visible and the activity is resumed. */
 @Composable
-private fun SensorWhile(sensor: TiltSensor, active: Boolean) {
+private fun SensorWhile(sensor: TiltSource, active: Boolean) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(sensor, lifecycle, active) {
         val observer = LifecycleEventObserver { _, event ->
@@ -241,12 +245,12 @@ private fun SensorWhile(sensor: TiltSensor, active: Boolean) {
 }
 
 private fun ambience(
-    journal: Boolean, reading: Reading, zero: Float, held: Boolean, focus: FocusPoint, turn: Float, pulses: Int, colors: Palette,
+    journal: Boolean, reading: Reading, calibration: Calibration, held: Boolean, focus: FocusPoint, turn: Float, pulses: Int, colors: Palette,
 ): Ambience {
     if (journal) return Ambience(0f, colors.accent, 0.18f, Offset.Unspecified, pulses)
     val edge = edgeWeight(reading)
     return Ambience(
-        tilt = if (reading.ready) reading.angle - zero else 0f,
+        tilt = if (reading.ready) calibration.correct(reading) else 0f,
         glow = if (held || reading.stable) colors.accent else colors.warn,
         energy = when {
             held -> 1f

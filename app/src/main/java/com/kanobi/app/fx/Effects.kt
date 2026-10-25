@@ -1,6 +1,5 @@
 package com.kanobi.app.fx
 
-import android.graphics.RenderEffect as PlatformRenderEffect
 import android.graphics.RuntimeShader
 import android.provider.Settings
 import android.util.Log
@@ -8,6 +7,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -20,11 +22,10 @@ import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Constraints
 import kotlin.math.abs
@@ -45,6 +46,9 @@ fun rememberShader(source: String): RuntimeShader? = remember(source) {
     }
 }
 
+/** Used only by the separate benchmark to simulate a higher pixel-shading workload. */
+internal val LocalTerrainWorkMultiplier = staticCompositionLocalOf { 1f }
+
 /**
  * What the terrain behind the app reacts to. Read every frame, never during composition.
  * [horizon] fades in the real horizon (0..1); [roll] is the clockwise screen rotation that is level;
@@ -64,7 +68,7 @@ class Ambience(
 /**
  * Full-screen living topographic map. It follows tilt and horizon changes at the display rate and
  * drifts at about 30 fps when the phone is still, from its own frame loop, so sensor updates never
- * recompose it. With [live] off it stays still. The shader renders at [TerrainScale] into a cached
+ * recompose it. With [live] off it stays still. The shader renders at 0.66 scale (adaptively 0.5/0.4 under sustained load) into a cached
  * layer: other animations on screen only composite that texture instead of running the shader again.
  */
 @Composable
@@ -72,6 +76,10 @@ fun AmbientTerrain(ambience: () -> Ambience, accent: Color, base: Color, live: B
     val latest by rememberUpdatedState(ambience)
     val scene = remember { Scene() }
     val frame = remember { mutableIntStateOf(0) }
+    val quality = remember { TerrainQuality() }
+    var terrainScale by remember { mutableFloatStateOf(quality.scale) }
+    val renderScale = terrainScale * LocalTerrainWorkMultiplier.current
+    val display = LocalView.current.display
     val shader = rememberShader(Agsl.TERRAIN)
     val resolver = LocalContext.current.contentResolver
     val systemMotion = remember(resolver) {
@@ -81,7 +89,16 @@ fun AmbientTerrain(ambience: () -> Ambience, accent: Color, base: Color, live: B
     LaunchedEffect(motion) {
         var previous = 0L
         var drawn = 0L
+        var refreshCheckedAt = 0L
+        var refreshRate = display?.refreshRate ?: 60f
         while (true) withFrameNanos { now ->
+            // Adaptive displays can switch between 60/90/120 Hz without recomposition.
+            // Poll infrequently so a legitimate lower display rate does not lower texture quality.
+            if (now - refreshCheckedAt >= 500_000_000L) {
+                refreshRate = display?.refreshRate ?: 60f
+                refreshCheckedAt = now
+            }
+            terrainScale = quality.frame(now, refreshRate)
             val busy = scene.advance(latest(), if (previous == 0L) 0f else (now - previous) / 1e9f, motion)
             previous = now
             if (busy || drawn == 0L || (motion && now - drawn >= 32_000_000L)) {
@@ -90,16 +107,16 @@ fun AmbientTerrain(ambience: () -> Ambience, accent: Color, base: Color, live: B
             }
         }
     }
-    Spacer(modifier.renderedAt(TerrainScale).drawBehind {
+    Spacer(modifier.renderedAt(renderScale).drawBehind {
         frame.intValue
-        scene.size = size / TerrainScale
+        scene.size = size / renderScale
         if (shader == null) {
             drawRect(base)
             return@drawBehind
         }
-        val focus = scene.focusOr(Offset(scene.size.width / 2f, scene.size.height * 0.3f)) * TerrainScale
+        val focus = scene.focusOr(Offset(scene.size.width / 2f, scene.size.height * 0.3f)) * renderScale
         shader.setFloatUniform("uSize", size.width, size.height)
-        shader.setFloatUniform("uDensity", density * TerrainScale)
+        shader.setFloatUniform("uDensity", density * renderScale)
         shader.setFloatUniform("uTime", scene.time)
         shader.setFloatUniform("uTilt", scene.tilt)
         shader.setFloatUniform("uFocus", focus.x, focus.y)
@@ -113,9 +130,6 @@ fun AmbientTerrain(ambience: () -> Ambience, accent: Color, base: Color, live: B
         drawRect(ShaderBrush(shader))
     })
 }
-
-/** Share of the screen resolution the terrain is shaded at; the soft map upscales cleanly. */
-private const val TerrainScale = 0.66f
 
 /** Lays out at full size but draws into an offscreen layer [scale] times smaller, stretched back. */
 private fun Modifier.renderedAt(scale: Float) = layout { measurable, constraints ->
@@ -199,30 +213,4 @@ private fun Color.channel(i: Int) = when (i) {
     0 -> red
     1 -> green
     else -> blue
-}
-
-/**
- * RGB split for a layer: red and blue drift apart by [px]. The platform effect is rebuilt only when
- * the shift, rounded to a quarter pixel, changes, so a moving phone does not allocate every frame.
- */
-class ChromaticSplit(private val shader: RuntimeShader) {
-    private var shift = -1f
-    private var effect: RenderEffect? = null
-
-    fun effect(px: Float): RenderEffect? {
-        val step = (px * 4f).roundToInt() / 4f
-        if (step < 0.5f) return null
-        if (step != shift) {
-            shift = step
-            shader.setFloatUniform("uShift", step, 0f)
-            effect = PlatformRenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
-        }
-        return effect
-    }
-}
-
-@Composable
-fun rememberChromaticSplit(): ChromaticSplit? {
-    val shader = rememberShader(Agsl.CHROMA)
-    return remember(shader) { shader?.let(::ChromaticSplit) }
 }
